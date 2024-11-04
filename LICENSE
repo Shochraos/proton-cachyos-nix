@@ -4,6 +4,6 @@ This repository is just Nix packaging for Proton-CachyOS (https://github.com/Cac
 
 The packaged software is subject to various licenses:
 - Valve's Proton: https://github.com/ValveSoftware/Proton/blob/proton_9.0/LICENSE.proton
-- CachyOS Proton Fork: https://github.com/CachyOS/proton-cachyos/blob/main/LICENSE.proton
+- CachyOS Proton Fork: https://github.com/CachyOS/proton-cachyos/
 
 All rights belong to their respective owners. This repository is simply providing Nix packaging to make the software easier to use on NixOS.
