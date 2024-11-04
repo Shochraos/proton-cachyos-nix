@@ -54,4 +54,4 @@ This is a community-maintained package and help is very welcome! If you'd like t
 
 ## Credit
 
-This package simply provides a Nix flake for the excellent work done by the CachyOS team on their Proton fork. All credit for Proton-CachyOS itself goes to them.
+This package simply provides a Nix flake for the excellent work done by the CachyOS team on their Proton fork (https://github.com/CachyOS/proton-cachyos). All credit for Proton-CachyOS itself goes to them. And credit to Valve for their work on Proton (https://github.com/ValveSoftware/Proton).
