@@ -53,7 +53,7 @@ This is a community-maintained package and help is welcome! If you'd like to con
    - Report packaging issues (e.g., installation problems, Steam not detecting the tool)
    - Problems with the Nix flake itself
    - Note: For issues with games or Proton itself, please report to:
-     - [CachyOS Proton](https://github.com/CachyOS/proton-cachyos) for CachyOS-specific issues
+     - [CachyOS Proton](https://github.com/CachyOS/proton-cachyos) and [CachyOS Wiki](https://wiki.cachyos.org/) for CachyOS-specific issues
      - [Valve Proton](https://github.com/ValveSoftware/Proton) for general Proton issues
 
 2. Pull Requests: 
