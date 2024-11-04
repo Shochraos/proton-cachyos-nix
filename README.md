@@ -2,6 +2,8 @@
 
 A Nix flake for [CachyOS Proton](https://github.com/CachyOS/proton-cachyos), a compatibility tool for Steam Play based on Wine with additional patches and optimizations from CachyOS.
 
+> **Disclaimer**: This is an unofficial, community-maintained Nix package. It is not affiliated with, officially connected to, or endorsed by Valve Corporation, CachyOS, or any of their subsidiaries or affiliates. The names Proton, CachyOS, and any related names are trademarks of their respective owners.
+
 ## Usage
 
 Add to your NixOS configuration:
@@ -45,12 +47,26 @@ sudo nixos-rebuild switch
 
 ## Contributing
 
-This is a community-maintained package and help is very welcome! If you'd like to contribute:
+This is a community-maintained package and help is welcome! If you'd like to contribute:
 
-1. Issues: Report any problems or suggest improvements by opening an issue
-2. Pull Requests: Feel free to submit improvements to the packaging
-3. Testing: Test the package with different games and report any issues
-4. Documentation: Help improve these docs or add usage examples
+1. Issues: 
+   - Report packaging issues (e.g., installation problems, Steam not detecting the tool)
+   - Problems with the Nix flake itself
+   - Note: For issues with games or Proton itself, please report to:
+     - [CachyOS Proton](https://github.com/CachyOS/proton-cachyos) for CachyOS-specific issues
+     - [Valve Proton](https://github.com/ValveSoftware/Proton) for general Proton issues
+
+2. Pull Requests: 
+   - Improvements to the Nix packaging
+   - Documentation updates
+   - Automation enhancements
+
+3. Documentation:
+   - Help improve installation instructions
+   - Add usage examples
+   - Clarify system requirements
+
+This repository only handles the Nix packaging of Proton-CachyOS. We can't fix issues with the underlying Proton implementation.
 
 ## Credits
 
