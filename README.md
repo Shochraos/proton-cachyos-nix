@@ -11,7 +11,6 @@ Add to your NixOS configuration:
 ```nix
 {
   inputs = {
-    # Your other inputs...
     nix-proton-cachyos.url = "github:kimjongbing/nix-proton-cachyos";
   };
 }
