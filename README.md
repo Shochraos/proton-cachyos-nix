@@ -52,6 +52,11 @@ This is a community-maintained package and help is very welcome! If you'd like t
 3. Testing: Test the package with different games and report any issues
 4. Documentation: Help improve these docs or add usage examples
 
-## Credit
+## Credits
 
-This package simply provides a Nix flake for the excellent work done by the CachyOS team on their Proton fork (https://github.com/CachyOS/proton-cachyos). All credit for Proton-CachyOS itself goes to them. And credit to Valve for their work on Proton (https://github.com/ValveSoftware/Proton).
+This package is just a Nix flake wrapper around:
+
+- [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos) by the CachyOS team - a fork of Proton with additional optimizations
+- [Proton](https://github.com/ValveSoftware/Proton) by Valve Corporation - the original compatibility layer for Steam Play
+
+All credit for the underlying software goes to their respective teams. This repository simply provides the Nix packaging to make it easier to use on NixOS.
