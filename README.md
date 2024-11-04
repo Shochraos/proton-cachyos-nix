@@ -27,7 +27,7 @@ programs.steam = {
 };
 ```
 
-After rebuilding your system, you should see "Proton-CachyOS" in Steam's compatibility tools list (Steam -> Settings -> Compatibility).
+After rebuilding your system, you should see something like "Proton-CachyOS" in Steam's compatibility tools list (Steam -> Settings -> Compatibility).
 
 ## Updates
 
