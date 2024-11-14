@@ -37,6 +37,13 @@ jobs:
          HASH=$(nix hash file --base64 --type sha256 "$TEMP_FILE")
          rm "$TEMP_FILE"
 
+         # Debug Variables
+         echo "LATEST: $LATEST"
+         echo "ENCODED_LATEST: $ENCODED_LATEST"
+         echo "BASE: $BASE"
+         echo "RELEASE: $RELEASE"
+         echo "HASH: $HASH"
+
          # Create new versions.json content
          NEW_CONTENT=$(cat <<EOF
          {
