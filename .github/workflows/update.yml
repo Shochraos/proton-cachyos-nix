@@ -1,68 +1,70 @@
 name: Update Package Version
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # Run every day at midnight
-  workflow_dispatch:
+ schedule:
+   - cron: '0 0 * * *'  # Run every day at midnight
+ workflow_dispatch:
 
 jobs:
-  check-update:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+ check-update:
+   runs-on: ubuntu-latest
+   steps:
+     - uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v25
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+     - name: Install Nix
+       uses: cachix/install-nix-action@v25
+       with:
+         github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check for Updates
-        id: check
-        run: |
-          # Store current version info
-          OLD_CONTENT=$(cat versions.json)
+     - name: Check for Updates
+       id: check
+       run: |
+         # Store current version info
+         OLD_CONTENT=$(cat versions.json)
 
-          # Get latest version from mirror
-          LATEST=$(curl -s 'https://mirror.cachyos.org/repo/x86_64_v3/cachyos-v3/' | grep -Po 'proton-cachyos-1:\d+\.\d+\.\d+-\d+-x86_64_v3\.pkg\.tar\.zst' | sort -V | tail -n1)
-          BASE=$(echo $LATEST | grep -Po '(?<=:)\d+\.\d+(?=\.)')
-          RELEASE=$(echo $LATEST | grep -Po '\d+(?=-\d+-x86_64)')
+         # Get latest version and properly encode the URL
+         LATEST=$(curl -s 'https://mirror.cachyos.org/repo/x86_64_v3/cachyos-v3/' | grep -Po 'proton-cachyos-1:\d+\.\d+\.\d+-\d+-x86_64_v3\.pkg\.tar\.zst' | sort -V | tail -n1)
+         ENCODED_LATEST=${LATEST//:/%3A}
+         
+         BASE=$(echo $LATEST | grep -Po '(?<=:)\d+\.\d+(?=\.)')
+         RELEASE=$(echo $LATEST | grep -Po '\d+(?=-\d+-x86_64)')
 
-          # Download file to temporary location with safe name
-          TEMP_FILE=$(mktemp)
-          curl -L "https://mirror.cachyos.org/repo/x86_64_v3/cachyos-v3/$LATEST" -o "$TEMP_FILE"
+         # Download file to temporary location
+         TEMP_FILE=$(mktemp)
+         curl -L "https://mirror.cachyos.org/repo/x86_64_v3/cachyos-v3/${ENCODED_LATEST}" -o "$TEMP_FILE"
 
-          # Get hash of the downloaded file
-          HASH=$(nix hash file --base64 --type sha256 "$TEMP_FILE")
-          rm "$TEMP_FILE"
+         # Get hash of the downloaded file
+         HASH=$(nix hash file --base64 --type sha256 "$TEMP_FILE")
+         rm "$TEMP_FILE"
 
-          # Create new versions.json content
-          NEW_CONTENT=$(cat <<EOF
-          {
-            "base": "$BASE",
-            "release": "$RELEASE",
-            "hash": "sha256-$HASH"
-          }
-          EOF
-          )
+         # Create new versions.json content
+         NEW_CONTENT=$(cat <<EOF
+         {
+           "base": "$BASE",
+           "release": "$RELEASE",
+           "hash": "sha256-$HASH"
+         }
+         EOF
+         )
 
-          # Compare old and new content
-          if [ "$OLD_CONTENT" = "$NEW_CONTENT" ]; then
-            echo "No updates available"
-            echo "UPDATE_NEEDED=false" >> $GITHUB_ENV
-          else
-            echo "$NEW_CONTENT" > versions.json
-            echo "UPDATE_NEEDED=true" >> $GITHUB_ENV
-          fi
+         # Compare old and new content
+         if [ "$OLD_CONTENT" = "$NEW_CONTENT" ]; then
+           echo "No updates available"
+           echo "UPDATE_NEEDED=false" >> $GITHUB_ENV
+         else
+           echo "$NEW_CONTENT" > versions.json
+           echo "UPDATE_NEEDED=true" >> $GITHUB_ENV
+         fi
 
-      - name: Create Pull Request
-        if: env.UPDATE_NEEDED == 'true'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          commit-message: 'proton-cachyos: update to latest version'
-          title: 'Update proton-cachyos'
-          body: |
-            Updated proton-cachyos to latest version from CachyOS mirror.
+     - name: Create Pull Request
+       if: env.UPDATE_NEEDED == 'true'
+       uses: peter-evans/create-pull-request@v5
+       with:
+         commit-message: 'proton-cachyos: update to latest version'
+         title: 'Update proton-cachyos'
+         body: |
+           Updated proton-cachyos to latest version from CachyOS mirror.
 
-            This PR was created automatically by the update workflow.
-          branch: update-proton-cachyos
-          delete-branch: true
+           This PR was created automatically by the update workflow.
+         branch: update-proton-cachyos
+         delete-branch: true
