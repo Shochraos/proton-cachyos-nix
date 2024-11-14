@@ -4,10 +4,10 @@ on:
  schedule:
    - cron: '0 0 * * *'  # Run every day at midnight
  workflow_dispatch:
- 
+
 permissions:
-  contents: write
-  pull-requests: write
+ contents: write
+ pull-requests: write
 
 jobs:
  check-update:
@@ -71,6 +71,7 @@ jobs:
        if: env.UPDATE_NEEDED == 'true'
        uses: peter-evans/create-pull-request@v5
        with:
+         token: ${{ secrets.PAT }}
          commit-message: 'proton-cachyos: update to latest version'
          title: 'Update proton-cachyos'
          body: |
