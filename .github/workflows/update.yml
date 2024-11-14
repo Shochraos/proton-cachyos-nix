@@ -4,7 +4,8 @@ on:
  schedule:
    - cron: '0 0 * * *'  # Run every day at midnight
  workflow_dispatch:
- permissions:
+ 
+permissions:
   contents: write
   pull-requests: write
 
