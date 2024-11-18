@@ -10,7 +10,7 @@ stdenv.mkDerivation {
   version = "${protonCachyosVersions.base}-${protonCachyosVersions.release}";
 
   src = fetchurl {
-    url = "https://mirror.cachyos.org/repo/x86_64_v3/cachyos-v3/proton-cachyos-1%3A${protonCachyosVersions.base}-${protonCachyosVersions.release}-1-x86_64_v3.pkg.tar.zst";
+    url = "https://mirror.cachyos.org/repo/x86_64_v3/cachyos-v3/proton-cachyos-1%3A${protonCachyosVersions.base}.${protonCachyosVersions.release}-1-x86_64_v3.pkg.tar.zst";
     inherit (protonCachyosVersions) hash;
   };
 
