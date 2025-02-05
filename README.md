@@ -32,7 +32,7 @@ After rebuilding your system, you should see something like "Proton-CachyOS" in 
 
 ## Updates
 
-This package automatically checks for updates every 6 hours and creates a pull request when a new version is available on the CachyOS mirror. To get the latest version:
+This package automatically checks for updates periodically and creates a pull request when a new version is available on the CachyOS mirror. To get the latest version:
 
 1. Update your flake inputs:
 ```bash
