@@ -24,20 +24,29 @@ jobs:
       - name: Check for Updates
         id: check
         run: |
+          set -e
+
           # Store current version info
           OLD_CONTENT=$(cat versions.json)
-
+          
           # Get latest version and properly encode the URL
-          LATEST=$(curl -s 'https://mirror.cachyos.org/repo/x86_64_v3/cachyos-v3/' | grep -Po 'proton-cachyos-1:\d+\.\d+\.\d+-\d+-x86_64_v3\.pkg\.tar\.zst' | sort -V | tail -n1)
+          LATEST=$(curl -fsSL 'https://mirror.cachyos.org/repo/x86_64_v3/cachyos-v3/' | grep -Po 'proton-cachyos-1:\d+\.\d+\.\d+-\d+-x86_64_v3\.pkg\.tar\.zst' | sort -V | tail -n1)
+          if [[ -z "$LATEST" ]]; then
+            echo "ERROR: No matching package name found in remote directory listing." >&2
+            exit 1
+          fi
           ENCODED_LATEST=${LATEST//:/%3A}
-
+          
           BASE=$(echo $LATEST | grep -Po '(?<=:)\d+\.\d+(?=\.)')
           RELEASE=$(echo $LATEST | grep -Po '\d+(?=-\d+-x86_64)')
-
+          
           # Download file to temporary location
           TEMP_FILE=$(mktemp)
-          curl -L "https://mirror.cachyos.org/repo/x86_64_v3/cachyos-v3/${ENCODED_LATEST}" -o "$TEMP_FILE"
-
+          if ! curl -Lf "https://mirror.cachyos.org/repo/x86_64_v3/cachyos-v3/${ENCODED_LATEST}" -o "$TEMP_FILE"; then
+            echo "ERROR: Download failed for $ENCODED_LATEST" >&2
+            exit 1
+          fi
+          
           # Get hash of the downloaded file
           HASH=$(nix hash file --base64 --type sha256 "$TEMP_FILE")
           rm "$TEMP_FILE"
