@@ -42,7 +42,7 @@ jobs:
           
           # Download file to temporary location
           TEMP_FILE=$(mktemp)
-          if ! curl -Lf "https://mirror.cachyos.org/repo/x86_64_v3/cachyos-v3/${ENCODED_LATEST}" -o "$TEMP_FILE"; then
+          if ! curl -Lf "https://mirror.cachyos.org/repo/x86_64/cachyos/${ENCODED_LATEST}" -o "$TEMP_FILE"; then
             echo "ERROR: Download failed for $ENCODED_LATEST" >&2
             exit 1
           fi
