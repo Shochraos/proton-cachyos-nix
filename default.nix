@@ -6,7 +6,7 @@
 }:
 
 stdenv.mkDerivation {
-  name = "proton-cachyos";
+  name = "proton-cachyos-slr";
   version = "${protonCachyosVersions.base}-${protonCachyosVersions.release}";
 
   src = fetchurl {
