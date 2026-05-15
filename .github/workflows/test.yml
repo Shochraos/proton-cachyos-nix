@@ -22,11 +22,11 @@ jobs:
       - name: Verify package structure
         run: |
           # Check if the compatibility tool files exist
-          test -f result/share/steam/compatibilitytools.d/proton-cachyos/compatibilitytool.vdf
-          test -f result/share/steam/compatibilitytools.d/proton-cachyos/proton
+          test -f result/share/steam/compatibilitytools.d/proton-cachyos-slr/compatibilitytool.vdf
+          test -f result/share/steam/compatibilitytools.d/proton-cachyos-slr/proton
 
           # Check if proton is executable
-          test -x result/share/steam/compatibilitytools.d/proton-cachyos/proton
+          test -x result/share/steam/compatibilitytools.d/proton-cachyos-slr/proton
 
       - name: Check Nix flake
         run: nix flake check
