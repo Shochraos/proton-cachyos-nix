@@ -25,6 +25,7 @@ stdenv.mkDerivation rec {
   '';
 
   postPatch = ''
+    cat usr/share/steam/compatibilitytools.d/proton-cachyos-slr/compatibilitytool.vdf
     substituteInPlace "usr/share/steam/compatibilitytools.d/proton-cachyos-slr/compatibilitytool.vdf" \
       --replace-fail "${archiveName}" "${protonDisplayName}"
   '';
