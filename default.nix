@@ -25,11 +25,8 @@ stdenv.mkDerivation rec {
   '';
 
   postPatch = ''
-    iconv -f UTF-16 -t UTF-8 usr/share/steam/compatibilitytools.d/proton-cachyos-slr/compatibilitytool.vdf > temp.vdf
-    mv temp.vdf usr/share/steam/compatibilitytools.d/proton-cachyos-slr/compatibilitytool.vdf
-    
-    substituteInPlace "usr/share/steam/compatibilitytools.d/proton-cachyos-slr/compatibilitytool.vdf" \
-      --replace-fail "$archiveName" "${protonDisplayName}"
+    substituteInPlace "compatibilitytool.vdf" \
+      --replace-fail "${archiveName}" "${protonDisplayName}"
   '';
 
   installPhase = ''
