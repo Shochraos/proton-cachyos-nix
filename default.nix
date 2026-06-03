@@ -7,6 +7,7 @@
 }:
 
 stdenv.mkDerivation rec {
+  pname = "proton-cachyos-slr";
   version = "${protonCachyosVersions.base}-${protonCachyosVersions.release}";
 
   archiveName = "proton-cachyos-${version} (steam linux runtime)";
