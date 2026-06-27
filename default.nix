@@ -14,7 +14,7 @@ stdenv.mkDerivation rec {
   protonDisplayName = "Proton-CachyOS-${version}";
 
   src = fetchurl {
-    url = "https://mirror.cachyos.org/repo/x86_64/cachyos/proton-cachyos-slr-1:${protonCachyosVersions.base}.${protonCachyosVersions.release}-1-x86_64.pkg.tar.zst";
+    url = "https://mirror.cachyos.org/repo/x86_64/cachyos/proton-cachyos-slr-1:${protonCachyosVersions.base}.${protonCachyosVersions.release}-${protonCachyosVersions.epoch}-x86_64.pkg.tar.zst";
     inherit (protonCachyosVersions) hash;
   };
 
