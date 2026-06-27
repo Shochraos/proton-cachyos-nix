@@ -25,28 +25,28 @@ jobs:
         id: check
         run: |
           set -e
-
           # Store current version info
           OLD_CONTENT=$(cat versions.json)
-          
-          # Get latest version and properly encode the URL
-          LATEST=$(curl -fsSL 'https://mirror.cachyos.org/repo/x86_64/cachyos/' | grep -Po 'proton-cachyos-slr-1[:\-].*?-x86_64\.pkg\.tar\.zst' | sort -V | tail -n1)
+
+          # Get latest version (epoch is now variable, not hardcoded to 1)
+          LATEST=$(curl -fsSL 'https://mirror.cachyos.org/repo/x86_64/cachyos/' | grep -Po 'proton-cachyos-slr-\d+:.*?-x86_64\.pkg\.tar\.zst' | sort -V | tail -n1)
           if [[ -z "$LATEST" ]]; then
             echo "ERROR: No matching package name found in remote directory listing." >&2
             exit 1
           fi
           ENCODED_LATEST=${LATEST//:/%3A}
-          
+
+          EPOCH=$(echo $LATEST | grep -Po '(?<=proton-cachyos-slr-)\d+(?=:)')
           BASE=$(echo $LATEST | grep -Po '(?<=:)\d+\.\d+(?=\.)')
           RELEASE=$(echo $LATEST | grep -Po '\d+(?=-\d+-x86_64)')
-          
+
           # Download file to temporary location
           TEMP_FILE=$(mktemp)
           if ! curl -Lf "https://mirror.cachyos.org/repo/x86_64/cachyos/${ENCODED_LATEST}" -o "$TEMP_FILE"; then
             echo "ERROR: Download failed for $ENCODED_LATEST" >&2
             exit 1
           fi
-          
+
           # Get hash of the downloaded file
           HASH=$(nix hash file --base64 --type sha256 "$TEMP_FILE")
           rm "$TEMP_FILE"
@@ -54,6 +54,7 @@ jobs:
           # Debug Variables
           echo "LATEST: $LATEST"
           echo "ENCODED_LATEST: $ENCODED_LATEST"
+          echo "EPOCH: $EPOCH"
           echo "BASE: $BASE"
           echo "RELEASE: $RELEASE"
           echo "HASH: $HASH"
@@ -61,6 +62,7 @@ jobs:
           # Create new versions.json content
           NEW_CONTENT=$(cat <<EOF
           {
+            "epoch": "$EPOCH",
             "base": "$BASE",
             "release": "$RELEASE",
             "hash": "sha256-$HASH"
