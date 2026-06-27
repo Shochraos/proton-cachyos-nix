@@ -28,17 +28,12 @@ jobs:
           # Store current version info
           OLD_CONTENT=$(cat versions.json)
 
-          # Get latest version (epoch is now variable, not hardcoded to 1)
-          LATEST=$(curl -fsSL 'https://mirror.cachyos.org/repo/x86_64/cachyos/' | grep -Po 'proton-cachyos-slr-\d+:.*?-x86_64\.pkg\.tar\.zst' | sort -V | tail -n1)
-          if [[ -z "$LATEST" ]]; then
-            echo "ERROR: No matching package name found in remote directory listing." >&2
-            exit 1
-          fi
-          ENCODED_LATEST=${LATEST//:/%3A}
-
-          EPOCH=$(echo $LATEST | grep -Po '(?<=proton-cachyos-slr-)\d+(?=:)')
-          BASE=$(echo $LATEST | grep -Po '(?<=:)\d+\.\d+(?=\.)')
-          RELEASE=$(echo $LATEST | grep -Po '\d+(?=-\d+-x86_64)')
+          LATEST=$(curl -fsSL 'https://mirror.cachyos.org/repo/x86_64/cachyos/' | grep -Po 'proton-cachyos-slr-\d+:[0-9.]+-\d+-x86_64\.pkg\.tar\.zst' | sort -V | tail -n1)
+          
+          EPOCH=$(echo $LATEST  | grep -Po '(?<=proton-cachyos-slr-)\d+(?=:)')
+          BASE=$(echo $LATEST   | grep -Po '(?<=:)\d+\.\d+(?=\.)')
+          RELEASE=$(echo $LATEST | grep -Po '(?<=\d\.)\d+(?=-\d+-x86_64)')
+          PKGREL=$(echo $LATEST | grep -Po '(?<=-)\d+(?=-x86_64)')
 
           # Download file to temporary location
           TEMP_FILE=$(mktemp)
@@ -65,6 +60,7 @@ jobs:
             "epoch": "$EPOCH",
             "base": "$BASE",
             "release": "$RELEASE",
+            "pkgrel": "$PKGREL",
             "hash": "sha256-$HASH"
           }
           EOF
