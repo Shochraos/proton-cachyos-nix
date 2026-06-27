@@ -25,49 +25,60 @@ jobs:
         id: check
         run: |
           set -e
-          # Store current version info
           OLD_CONTENT=$(cat versions.json)
 
           LATEST=$(curl -fsSL 'https://mirror.cachyos.org/repo/x86_64/cachyos/' | grep -Po 'proton-cachyos-slr-\d+:[0-9.]+-\d+-x86_64\.pkg\.tar\.zst' | sort -V | tail -n1)
-          
-          EPOCH=$(echo $LATEST  | grep -Po '(?<=proton-cachyos-slr-)\d+(?=:)')
-          BASE=$(echo $LATEST   | grep -Po '(?<=:)\d+\.\d+(?=\.)')
-          RELEASE=$(echo $LATEST | grep -Po '(?<=\d\.)\d+(?=-\d+-x86_64)')
-          PKGREL=$(echo $LATEST | grep -Po '(?<=-)\d+(?=-x86_64)')
+          if [[ -z "$LATEST" ]]; then
+            echo "ERROR: No matching package found in directory listing." >&2
+            exit 1
+          fi
 
-          # Download file to temporary location
+          # URL-encode the ':' in the epoch separator  ← das fehlte!
+          ENCODED_LATEST=${LATEST//:/%3A}
+          if [[ -z "$ENCODED_LATEST" ]]; then
+            echo "ERROR: ENCODED_LATEST is empty" >&2
+            exit 1
+          fi
+
+          EPOCH=$(echo "$LATEST"   | grep -Po '(?<=proton-cachyos-slr-)\d+(?=:)')
+          BASE=$(echo "$LATEST"    | grep -Po '(?<=:)\d+\.\d+(?=\.)')
+          RELEASE=$(echo "$LATEST" | grep -Po '(?<=\d\.)\d+(?=-\d+-x86_64)')
+          PKGREL=$(echo "$LATEST"  | grep -Po '(?<=-)\d+(?=-x86_64)')
+
+          # Download to temp file
           TEMP_FILE=$(mktemp)
           if ! curl -Lf "https://mirror.cachyos.org/repo/x86_64/cachyos/${ENCODED_LATEST}" -o "$TEMP_FILE"; then
             echo "ERROR: Download failed for $ENCODED_LATEST" >&2
             exit 1
           fi
 
-          # Get hash of the downloaded file
+          # Sanity check: the real package is hundreds of MB, abort if too small
+          SIZE=$(stat -c%s "$TEMP_FILE")
+          if [[ "$SIZE" -lt 10000000 ]]; then
+            echo "ERROR: downloaded file too small ($SIZE bytes) — wrong URL?" >&2
+            exit 1
+          fi
+
           HASH=$(nix hash file --base64 --type sha256 "$TEMP_FILE")
           rm "$TEMP_FILE"
 
-          # Debug Variables
+          # Debug
           echo "LATEST: $LATEST"
           echo "ENCODED_LATEST: $ENCODED_LATEST"
           echo "EPOCH: $EPOCH"
           echo "BASE: $BASE"
           echo "RELEASE: $RELEASE"
+          echo "PKGREL: $PKGREL"
+          echo "SIZE: $SIZE"
           echo "HASH: $HASH"
 
-          # Create new versions.json content
-          NEW_CONTENT=$(cat <<EOF
-          {
-            "epoch": "$EPOCH",
-            "base": "$BASE",
-            "release": "$RELEASE",
-            "pkgrel": "$PKGREL",
-            "hash": "sha256-$HASH"
-          }
-          EOF
-          )
+          # Build new versions.json deterministically with jq
+          NEW_CONTENT=$(jq -n \
+            --arg epoch "$EPOCH" --arg base "$BASE" --arg release "$RELEASE" \
+            --arg pkgrel "$PKGREL" --arg hash "sha256-$HASH" \
+            '{epoch:$epoch, base:$base, release:$release, pkgrel:$pkgrel, hash:$hash}')
 
-          # Compare old and new content
-          if [ "$OLD_CONTENT" = "$NEW_CONTENT" ]; then
+          if [ "$(jq -S . versions.json)" = "$(echo "$NEW_CONTENT" | jq -S .)" ]; then
             echo "No updates available"
             echo "UPDATE_NEEDED=false" >> $GITHUB_ENV
           else
