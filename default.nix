@@ -24,8 +24,17 @@ stdenv.mkDerivation rec {
   '';
 
   postPatch = ''
-    substituteInPlace "usr/share/steam/compatibilitytools.d/proton-cachyos-slr/compatibilitytool.vdf" \
+    toolDir=usr/share/steam/compatibilitytools.d/proton-cachyos-slr
+
+    substituteInPlace "$toolDir/compatibilitytool.vdf" \
       --replace-fail "${archiveName}" "${protonDisplayName}"
+
+    rm -f "$toolDir"/files/share/default_pfx*/.update-timestamp
+
+    substituteInPlace "$toolDir/proton" \
+      --replace-fail \
+        "with open(os.path.join(self.prefix_dir, '.update-timestamp'), 'w') as update_timestamp:" \
+        "with open(os.devnull, 'w') as update_timestamp:"
   '';
 
   installPhase = ''
