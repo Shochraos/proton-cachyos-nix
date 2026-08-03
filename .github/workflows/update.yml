@@ -2,7 +2,7 @@ name: Update Package Version
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Run every day at midnight
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 permissions:
@@ -17,66 +17,50 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v25
+        uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check for Updates
         id: check
         run: |
-          set -e
-          OLD_CONTENT=$(cat versions.json)
+          set -euo pipefail
 
-          LATEST=$(curl -fsSL 'https://mirror.cachyos.org/repo/x86_64/cachyos/' | grep -Po 'proton-cachyos-slr-\d+:[0-9.]+-\d+-x86_64\.pkg\.tar\.zst' | sort -V | tail -n1)
-          if [[ -z "$LATEST" ]]; then
-            echo "ERROR: No matching package found in directory listing." >&2
+          TAG=$(curl -fsSL \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/CachyOS/proton-cachyos/releases/latest | jq -r .tag_name)
+
+          if [[ ! "$TAG" =~ ^cachyos-(.+)-slr$ ]]; then
+            echo "ERROR: unexpected release tag '$TAG'" >&2
             exit 1
           fi
 
-          # URL-encode the ':' in the epoch separator  ← das fehlte!
-          ENCODED_LATEST=${LATEST//:/%3A}
-          if [[ -z "$ENCODED_LATEST" ]]; then
-            echo "ERROR: ENCODED_LATEST is empty" >&2
-            exit 1
-          fi
+          VERSION="${BASH_REMATCH[1]}"
+          BASE="${VERSION%%-*}"
+          RELEASE="${VERSION#*-}"
 
-          EPOCH=$(echo "$LATEST"   | grep -Po '(?<=proton-cachyos-slr-)\d+(?=:)')
-          BASE=$(echo "$LATEST"    | grep -Po '(?<=:)\d+\.\d+(?=\.)')
-          RELEASE=$(echo "$LATEST" | grep -Po '(?<=\d\.)\d+(?=-\d+-x86_64)')
-          PKGREL=$(echo "$LATEST"  | grep -Po '(?<=-)\d+(?=-x86_64)')
+          declare -A HASHES
+          for ARCH in x86_64 x86_64_v3; do
+            ASSET="proton-cachyos-${VERSION}-slr-${ARCH}"
+            SUM=$(curl -fsSL "https://github.com/CachyOS/proton-cachyos/releases/download/${TAG}/${ASSET}.sha512sum")
+            SUM=${SUM%% *}
+            if [[ ! "$SUM" =~ ^[0-9a-f]{128}$ ]]; then
+              echo "ERROR: no valid sha512sum published for $ARCH in $TAG" >&2
+              exit 1
+            fi
+            HASHES[$ARCH]=$(nix hash convert --hash-algo sha512 --to sri "$SUM")
+          done
 
-          # Download to temp file
-          TEMP_FILE=$(mktemp)
-          if ! curl -Lf "https://mirror.cachyos.org/repo/x86_64/cachyos/${ENCODED_LATEST}" -o "$TEMP_FILE"; then
-            echo "ERROR: Download failed for $ENCODED_LATEST" >&2
-            exit 1
-          fi
-
-          # Sanity check: the real package is hundreds of MB, abort if too small
-          SIZE=$(stat -c%s "$TEMP_FILE")
-          if [[ "$SIZE" -lt 10000000 ]]; then
-            echo "ERROR: downloaded file too small ($SIZE bytes) — wrong URL?" >&2
-            exit 1
-          fi
-
-          HASH=$(nix hash file --base64 --type sha256 "$TEMP_FILE")
-          rm "$TEMP_FILE"
-
-          # Debug
-          echo "LATEST: $LATEST"
-          echo "ENCODED_LATEST: $ENCODED_LATEST"
-          echo "EPOCH: $EPOCH"
+          echo "TAG: $TAG"
           echo "BASE: $BASE"
           echo "RELEASE: $RELEASE"
-          echo "PKGREL: $PKGREL"
-          echo "SIZE: $SIZE"
-          echo "HASH: $HASH"
+          echo "x86_64: ${HASHES[x86_64]}"
+          echo "x86_64_v3: ${HASHES[x86_64_v3]}"
 
-          # Build new versions.json deterministically with jq
           NEW_CONTENT=$(jq -n \
-            --arg epoch "$EPOCH" --arg base "$BASE" --arg release "$RELEASE" \
-            --arg pkgrel "$PKGREL" --arg hash "sha256-$HASH" \
-            '{epoch:$epoch, base:$base, release:$release, pkgrel:$pkgrel, hash:$hash}')
+            --arg base "$BASE" --arg release "$RELEASE" \
+            --arg baseline "${HASHES[x86_64]}" --arg v3 "${HASHES[x86_64_v3]}" \
+            '{base: $base, release: $release, hashes: {"x86_64": $baseline, "x86_64_v3": $v3}}')
 
           if [ "$(jq -S . versions.json)" = "$(echo "$NEW_CONTENT" | jq -S .)" ]; then
             echo "No updates available"

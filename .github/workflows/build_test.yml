@@ -10,23 +10,39 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [ proton-cachyos, proton-cachyos-v3 ]
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v25
+        uses: cachix/install-nix-action@v31
 
       - name: Build package
-        run: nix build
+        run: nix build .#${{ matrix.package }}
 
       - name: Verify package structure
         run: |
-          # Check if the compatibility tool files exist
-          test -f result/share/steam/compatibilitytools.d/proton-cachyos-slr/compatibilitytool.vdf
-          test -f result/share/steam/compatibilitytools.d/proton-cachyos-slr/proton
+          set -euo pipefail
+          tool=result/share/steam/compatibilitytools.d/proton-cachyos-slr
 
-          # Check if proton is executable
-          test -x result/share/steam/compatibilitytools.d/proton-cachyos-slr/proton
+          test -f "$tool/compatibilitytool.vdf"
+          test -x "$tool/proton"
+
+          grep -q '"proton-cachyos-slr"' "$tool/compatibilitytool.vdf"
+          grep -q '"display_name" "Proton-CachyOS-' "$tool/compatibilitytool.vdf"
+
+          ! test -e "$tool/files/share/default_pfx/.update-timestamp"
+
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
 
       - name: Check Nix flake
         run: nix flake check

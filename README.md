@@ -30,9 +30,27 @@ programs.steam = {
 
 After rebuilding your system, you should see something like "Proton-CachyOS" in Steam's compatibility tools list (Steam -> Settings -> Compatibility).
 
+### x86-64-v3 build
+
+CachyOS publishes a second build of every release, compiled for the `x86-64-v3` microarchitecture level (AVX2, BMI2, FMA — Intel Haswell / AMD Excavator and newer). Select it with the `proton-cachyos-v3` attribute instead:
+
+```nix
+extraCompatPackages = [
+  inputs.nix-proton-cachyos.packages.${system}.proton-cachyos-v3
+];
+```
+
+Both variants install under the same internal tool name, `proton-cachyos-slr`, so switching between them keeps per-game compatibility tool selections in Steam. The `display_name` shown in the Steam UI carries the microarchitecture, so you can tell which one is active. Do not install both at once — they collide.
+
+Check that your CPU supports the level before switching:
+
+```bash
+/lib64/ld-linux-x86-64.so.2 --help | grep x86-64-v3
+```
+
 ## Updates
 
-This package automatically checks for updates periodically and creates a pull request when a new version is available on the CachyOS mirror. To get the latest version:
+This package automatically checks the [proton-cachyos releases](https://github.com/CachyOS/proton-cachyos/releases) daily and commits a new `versions.json` when a newer release is published. To get the latest version:
 
 1. Update your flake inputs:
 ```bash

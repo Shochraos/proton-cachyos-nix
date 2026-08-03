@@ -15,6 +15,10 @@
         proton-cachyos = pkgs.callPackage ./default.nix {
           inherit protonCachyosVersions;
         };
+        proton-cachyos-v3 = pkgs.callPackage ./default.nix {
+          inherit protonCachyosVersions;
+          microArchitecture = "x86_64_v3";
+        };
         default = self.packages.${system}.proton-cachyos;
       };
     };

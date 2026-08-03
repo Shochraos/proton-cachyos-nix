@@ -1,7 +1,8 @@
 {
-  "epoch": "1",
   "base": "11.0",
   "release": "20260703",
-  "pkgrel": "1",
-  "hash": "sha256-T6coXzRxjHmcLkbsmVnO5wIRkO5pxHi9CARcqqDlwL0="
+  "hashes": {
+    "x86_64": "sha512-cT/gCNZ+NJGu87Wx2a4sES18K1iz8j/COH0RIvwTH/fn8OonxnvyeXPZBr3OYjXDQJhTDsTHhgWUOLFTxuFhhw==",
+    "x86_64_v3": "sha512-WRGoYLDdESaPNzbTMoenSZOt2pjkyURNFc+fiYj86pwdk6AeFNEBkCFFit0XVQlev2wqglyg1JzjSbNbF5zQEw=="
+  }
 }
