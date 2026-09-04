@@ -18,8 +18,8 @@ Add the input:
 
 ```nix
 {
-  inputs.nix-proton-cachyos = {
-    url = "github:Shochraos/nix-proton-cachyos";
+  inputs.proton-cachyos-nix = {
+    url = "github:Shochraos/proton-cachyos-nix";
     inputs.nixpkgs.follows = "nixpkgs";
   };
 }
@@ -33,7 +33,7 @@ Then add it to Steam:
   programs.steam = {
     enable = true;
     extraCompatPackages = [
-      inputs.nix-proton-cachyos.packages.${pkgs.stdenv.hostPlatform.system}.proton-cachyos
+      inputs.proton-cachyos-nix.packages.${pkgs.stdenv.hostPlatform.system}.proton-cachyos
     ];
   };
 }
@@ -47,7 +47,7 @@ CachyOS publishes a second build of every release, compiled for the `x86-64-v3` 
 
 ```nix
 extraCompatPackages = [
-  inputs.nix-proton-cachyos.packages.${pkgs.stdenv.hostPlatform.system}.proton-cachyos-v3
+  inputs.proton-cachyos-nix.packages.${pkgs.stdenv.hostPlatform.system}.proton-cachyos-v3
 ];
 ```
 
@@ -64,7 +64,7 @@ Check that your CPU supports the level before switching:
 Every day at 00:00 UTC (and on manual dispatch), the update workflow reads the latest upstream release tag, verifies it matches `cachyos-<base>-<release>-slr`, and fetches the `.sha512sum` files CachyOS publishes next to the tarballs, converting each to SRI form for `versions.json`. A missing or malformed checksum fails the run. If nothing changed, nothing is committed; otherwise the new pin goes straight to `main` and CI builds both packages on the next push. To pick up a new version:
 
 ```bash
-nix flake update nix-proton-cachyos
+nix flake update proton-cachyos-nix
 sudo nixos-rebuild switch
 ```
 
