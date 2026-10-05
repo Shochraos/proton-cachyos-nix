@@ -1,8 +1,8 @@
 {
   "base": "11.0",
-  "release": "20260703",
+  "release": "20261005",
   "hashes": {
-    "x86_64": "sha512-cT/gCNZ+NJGu87Wx2a4sES18K1iz8j/COH0RIvwTH/fn8OonxnvyeXPZBr3OYjXDQJhTDsTHhgWUOLFTxuFhhw==",
-    "x86_64_v3": "sha512-WRGoYLDdESaPNzbTMoenSZOt2pjkyURNFc+fiYj86pwdk6AeFNEBkCFFit0XVQlev2wqglyg1JzjSbNbF5zQEw=="
+    "x86_64": "sha512-RXvuYFHuZxUJ4c1rhlJG3wBoXlCJCM0M+Yxi/TEdDHgc6A/KPpUA6J/X5IRj+iYzWAbNscOOUo/Q4+K2tmxEaQ==",
+    "x86_64_v3": "sha512-6PSS51kVSGos3yn70a/RifdQFT0FPzI5XhFx199lrAU2GkP6gzlICS1ebBiTj2WO14efkqgamtV6FMcwNPf0XA=="
   }
 }
