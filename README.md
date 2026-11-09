@@ -1,31 +1,25 @@
-# Nix Proton-CachyOS
+# Proton packages for Nix
 
-Nix packaging for [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos), CachyOS's Proton build with additional patches and optimizations, as a Steam Play compatibility tool.
+## Summary
 
-> **AI disclaimer:** The Nix packaging and this README are maintained with AI assistance. The package installs a binary tarball published on the upstream release page. Read what you install.
+Nix packages for [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos) and [DW-Proton](https://dawn.wine/dawn-winery/dwproton), for Steam on `x86_64-linux`.
 
-## How it works
+The packaging, update automation, and documentation are maintained with AI assistance. Packages install prebuilt upstream release archives; this repository does not compile Proton from source. Read what you install.
 
-- `versions.json` pins the build (`base`, `release`, and a sha512 hash per microarchitecture). `flake.nix` reads it with `builtins.fromJSON`, and `default.nix` fetches the matching `proton-cachyos-<base>-<release>-slr-<arch>` tarball from the upstream release page with that hash. Only `x86_64-linux` is built.
-- Two attributes share one derivation: `proton-cachyos` for the baseline `x86_64` build and `proton-cachyos-v3` for the `x86_64_v3` one. Both rewrite `compatibilitytool.vdf` so the tool registers under the same internal name, `proton-cachyos-slr`, with the display name `Proton-CachyOS-<base>-<release>-<arch>` carrying the microarchitecture, and install it to `share/steam/compatibilitytools.d/proton-cachyos-slr`. The shared internal name means Steam keeps per-game tool selections when you switch between the two.
-- The tarball ships a `.update-timestamp` marker inside its default prefix, and Proton stamps new prefixes with the mtime of the distribution's `wine.inf`. Wine re-runs its wine.inf prefix update whenever a prefix's marker disagrees with the live `wine.inf` mtime. The marker the tarball carries records the mtime from the machine that built the tarball, which the Nix store does not reproduce. The build therefore deletes the shipped marker and points Proton's stamp write at `/dev/null`. Wine seeds the timestamp itself on a prefix's first launch, and the check compares equal from then on.
+## Installation
 
-Packaging problems belong here. Game and Proton issues go upstream: to [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos) and the [CachyOS wiki](https://wiki.cachyos.org/) for CachyOS-specific problems, to [Valve's Proton](https://github.com/ValveSoftware/Proton) for general ones.
-
-## Usage
-
-Add the input:
+Add one input to your NixOS flake, following your existing nixpkgs input:
 
 ```nix
 {
-  inputs.proton-cachyos-nix = {
+  inputs.proton = {
     url = "github:Shochraos/proton-cachyos-nix";
     inputs.nixpkgs.follows = "nixpkgs";
   };
 }
 ```
 
-Then add it to Steam:
+Select packages in your NixOS configuration:
 
 ```nix
 { inputs, pkgs, ... }:
@@ -33,45 +27,33 @@ Then add it to Steam:
   programs.steam = {
     enable = true;
     extraCompatPackages = [
-      inputs.proton-cachyos-nix.packages.${pkgs.stdenv.hostPlatform.system}.proton-cachyos
+      inputs.proton.packages.${pkgs.stdenv.hostPlatform.system}.proton-cachyos
+      inputs.proton.packages.${pkgs.stdenv.hostPlatform.system}.dw-proton
     ];
   };
 }
 ```
 
-`proton-cachyos` is also the flake's `default` package. After the rebuild, `Proton-CachyOS-<base>-<release>-<arch>` (currently `Proton-CachyOS-11.0-20260703-x86_64`) appears in Steam's compatibility tools list (Steam → Settings → Compatibility).
+Rebuild your configuration, restart Steam, and select a tool in the game's Properties → Compatibility settings. Steam integration and game compatibility depend on your system and upstream release.
 
-### x86-64-v3 build
+## Usage
 
-CachyOS publishes a second build of every release, compiled for the `x86-64-v3` microarchitecture level (AVX2, BMI2, FMA — Intel Haswell / AMD Excavator and newer). Select it with the `proton-cachyos-v3` attribute:
+- `proton-cachyos`: baseline `x86_64` build and the flake's `default` package.
+- `proton-cachyos-v3`: `x86_64_v3` build; requires a CPU supporting the full x86-64-v3 feature set, including AVX2, BMI2, and FMA. Confirm support before selecting it.
+- `dw-proton`: Dawn Winery's Proton build.
 
-```nix
-extraCompatPackages = [
-  inputs.proton-cachyos-nix.packages.${pkgs.stdenv.hostPlatform.system}.proton-cachyos-v3
-];
-```
+Use only one CachyOS variant at a time: both install as `proton-cachyos-slr` and share the same Steam identity. Replace the baseline attribute with `proton-cachyos-v3` to switch. The display name, `Proton-CachyOS-<base>-<release>-<arch>`, identifies the selected variant. DW uses the versioned identity `DW-Proton-<base>-<release>` and installs separately as `dw-proton`.
 
-Both attributes install under the same internal tool name, so only one of them can be in `extraCompatPackages` at a time; the two collide. The display name shown in the Steam UI carries the microarchitecture, so you can tell which one is active.
+When migrating from `Shochraos/dw-proton-nix`, select this input's `dw-proton` explicitly: this repository's default is CachyOS, not DW. Remove the separate DW input only after replacing its references, and update only the affected consumer lock inputs. Direct recipe imports must use `proton-cachyos/proton-cachyos.nix` or `dw-proton/dw-proton.nix` with their existing version arguments; the former root recipe and version paths are not retained.
 
-Check that your CPU supports the level before switching:
+Report packaging issues here; report game or Proton issues to the relevant [CachyOS](https://github.com/CachyOS/proton-cachyos), [Dawn Winery](https://dawn.wine/dawn-winery/dwproton), or [Valve](https://github.com/ValveSoftware/Proton) upstream.
 
-```bash
-/lib64/ld-linux-x86-64.so.2 --help | grep x86-64-v3
-```
+## Architecture
 
-## Updates
+One flake exposes separate provider recipes and pinned upstream binary archives, with one shared nixpkgs lock. Each recipe preserves its provider's archive layout and Steam identity. Both remove shipped prefix timestamp markers and redirect Proton's timestamp write to `/dev/null` for the Nix store.
 
-Every day at 00:00 UTC (and on manual dispatch), the update workflow reads the latest upstream release tag, verifies it matches `cachyos-<base>-<release>-slr`, and fetches the `.sha512sum` files CachyOS publishes next to the tarballs, converting each to SRI form for `versions.json`. A missing or malformed checksum fails the run. If nothing changed, nothing is committed; otherwise the new pin goes straight to `main` and CI builds both packages on the next push. To pick up a new version:
-
-```bash
-nix flake update proton-cachyos-nix
-sudo nixos-rebuild switch
-```
-
-## Development
-
-`nix build .#proton-cachyos` and `nix build .#proton-cachyos-v3` build the pinned releases and `nix flake check` evaluates the flake. Pushes and PRs to `main` run a CI matrix over both packages: the build step checks that `compatibilitytool.vdf` and an executable `proton` land in the installed tool directory, that the vdf names `proton-cachyos-slr` as the tool and carries the `Proton-CachyOS-` display name, and that no `.update-timestamp` survives in the default prefix. nixpkgs is pinned to `nixpkgs-unstable`.
+Package CI builds all three named packages and inspects their installed files without running Proton. A serialized updater validates each provider's candidate, builds the affected packages, and checks their artifacts before publishing accepted pins. These checks do not establish Steam or game compatibility.
 
 ## License
 
-The [LICENSE](LICENSE) file documents the license the packaged software ships under: Valve's BSD-style license for Proton. The repository itself is Nix packaging only.
+[LICENSE](LICENSE) retains Valve's BSD-style Proton license and references both upstream distributions. Their bundled components retain their own licenses and notices. This repository contains packaging, not a new license grant for upstream software. The packaging retains its origin as a fork of [kimjongbing/nix-proton-cachyos](https://github.com/kimjongbing/nix-proton-cachyos).

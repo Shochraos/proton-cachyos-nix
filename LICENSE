@@ -1,6 +1,6 @@
 # License Information
 
-This repository is just Nix packaging for Proton-CachyOS (https://github.com/CachyOS/proton-cachyos), which is a fork of Valve's Proton (https://github.com/ValveSoftware/Proton).
+This repository is just Nix packaging for Proton-CachyOS (https://github.com/CachyOS/proton-cachyos) and DW-Proton (https://dawn.wine/dawn-winery/dwproton), which derive from Valve's Proton (https://github.com/ValveSoftware/Proton).
 
 The packaged software is distributed under Valve's license:
 

@@ -1,4 +1,4 @@
-name: Update Package Version
+name: Update Package Versions
 
 on:
   schedule:
@@ -8,73 +8,116 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: proton-version-updates-main
+  cancel-in-progress: false
+
+env:
+  UPDATE_BRANCH: main
+
 jobs:
-  check-update:
+  update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Install Nix
         uses: cachix/install-nix-action@v31
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check for Updates
-        id: check
+      - name: Prepare isolated candidates
+        id: prepare
         run: |
           set -euo pipefail
-
-          TAG=$(curl -fsSL \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/CachyOS/proton-cachyos/releases/latest | jq -r .tag_name)
-
-          if [[ ! "$TAG" =~ ^cachyos-(.+)-slr$ ]]; then
-            echo "ERROR: unexpected release tag '$TAG'" >&2
+          test -z "$(git status --porcelain)"
+          base=$(git rev-parse HEAD)
+          root=$(mktemp -d "$RUNNER_TEMP/proton-update.XXXXXX")
+          mkdir "$root/source" "$root/tmp"
+          tar --exclude=.git -cf - . | tar -xf - -C "$root/source"
+          cp -a "$root/source" "$root/accepted"
+          printf 'BASE_REV=%s\nUPDATE_ROOT=%s\nTMPDIR=%s\n' "$base" "$root" "$root/tmp" >> "$GITHUB_ENV"
+      - name: Validate CachyOS candidate and both variants
+        id: cachyos
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          candidate=$UPDATE_ROOT/cachyos.json
+          bash scripts/update-versions.sh cachyos "$candidate"
+          if [[ $(jq -Sc . "$candidate") == "$(jq -Sc . proton-cachyos/versions.json)" ]]; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          tree=$UPDATE_ROOT/cachyos
+          cp -a "$UPDATE_ROOT/source" "$tree"
+          cp "$candidate" "$tree/proton-cachyos/versions.json"
+          nix flake check "path:$tree" --no-build --no-write-lock-file --option allow-import-from-derivation false
+          for attribute in proton-cachyos proton-cachyos-v3; do
+            output=$(nix build "path:$tree#$attribute" --no-link --print-out-paths --no-write-lock-file --option allow-import-from-derivation false)
+            bash "$tree/scripts/check-package.sh" "$attribute" "$output"
+          done
+          cp "$candidate" "$UPDATE_ROOT/accepted/proton-cachyos/versions.json"
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+      - name: Validate DW candidate
+        id: dw
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          candidate=$UPDATE_ROOT/dw.json
+          bash scripts/update-versions.sh dw "$candidate"
+          if [[ $(jq -Sc . "$candidate") == "$(jq -Sc . dw-proton/versions.json)" ]]; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          tree=$UPDATE_ROOT/dw
+          cp -a "$UPDATE_ROOT/source" "$tree"
+          cp "$candidate" "$tree/dw-proton/versions.json"
+          nix flake check "path:$tree" --no-build --no-write-lock-file --option allow-import-from-derivation false
+          output=$(nix build "path:$tree#dw-proton" --no-link --print-out-paths --no-write-lock-file --option allow-import-from-derivation false)
+          bash "$tree/scripts/check-package.sh" dw-proton "$output"
+          cp "$candidate" "$UPDATE_ROOT/accepted/dw-proton/versions.json"
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+      - name: Evaluate accepted tree and publish only validated pins
+        id: publish
+        if: ${{ !cancelled() && steps.prepare.outcome == 'success' }}
+        env:
+          CACHYOS_CHANGED: ${{ steps.cachyos.outputs.changed }}
+          DW_CHANGED: ${{ steps.dw.outputs.changed }}
+        run: |
+          set -euo pipefail
+          nix flake check "path:$UPDATE_ROOT/accepted" --no-build --no-write-lock-file --option allow-import-from-derivation false
+          paths=()
+          [[ $CACHYOS_CHANGED != true ]] || paths+=(proton-cachyos/versions.json)
+          [[ $DW_CHANGED != true ]] || paths+=(dw-proton/versions.json)
+          if [[ ${#paths[@]} == 0 ]]; then
+            echo 'No validated changes to publish' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          test "$(git rev-parse HEAD)" = "$BASE_REV"
+          test -z "$(git status --porcelain)"
+          remote=$(git ls-remote --exit-code origin "refs/heads/$UPDATE_BRANCH")
+          if [[ $remote != "$BASE_REV"$'\t'"refs/heads/$UPDATE_BRANCH" ]]; then
+            echo '::error::Branch moved; refusing publication. Retry from the new baseline.'
             exit 1
           fi
-
-          VERSION="${BASH_REMATCH[1]}"
-          BASE="${VERSION%%-*}"
-          RELEASE="${VERSION#*-}"
-
-          declare -A HASHES
-          for ARCH in x86_64 x86_64_v3; do
-            ASSET="proton-cachyos-${VERSION}-slr-${ARCH}"
-            SUM=$(curl -fsSL "https://github.com/CachyOS/proton-cachyos/releases/download/${TAG}/${ASSET}.sha512sum")
-            SUM=${SUM%% *}
-            if [[ ! "$SUM" =~ ^[0-9a-f]{128}$ ]]; then
-              echo "ERROR: no valid sha512sum published for $ARCH in $TAG" >&2
-              exit 1
-            fi
-            HASHES[$ARCH]=$(nix hash convert --hash-algo sha512 --to sri "$SUM")
+          for path in "${paths[@]}"; do
+            cp "$UPDATE_ROOT/accepted/$path" "$path"
           done
-
-          echo "TAG: $TAG"
-          echo "BASE: $BASE"
-          echo "RELEASE: $RELEASE"
-          echo "x86_64: ${HASHES[x86_64]}"
-          echo "x86_64_v3: ${HASHES[x86_64_v3]}"
-
-          NEW_CONTENT=$(jq -n \
-            --arg base "$BASE" --arg release "$RELEASE" \
-            --arg baseline "${HASHES[x86_64]}" --arg v3 "${HASHES[x86_64_v3]}" \
-            '{base: $base, release: $release, hashes: {"x86_64": $baseline, "x86_64_v3": $v3}}')
-
-          if [ "$(jq -S . versions.json)" = "$(echo "$NEW_CONTENT" | jq -S .)" ]; then
-            echo "No updates available"
-            echo "UPDATE_NEEDED=false" >> $GITHUB_ENV
-          else
-            echo "$NEW_CONTENT" > versions.json
-            echo "UPDATE_NEEDED=true" >> $GITHUB_ENV
-          fi
-
-      - name: Commit and push to main
-        if: env.UPDATE_NEEDED == 'true'
+          git add -- "${paths[@]}"
+          test "$(git diff --cached --name-only | sort)" = "$(printf '%s\n' "${paths[@]}" | sort)"
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'chore: update validated Proton versions' -- "${paths[@]}"
+          git push origin "HEAD:refs/heads/$UPDATE_BRANCH"
+          published=$(git rev-parse HEAD)
+          remote=$(git ls-remote --exit-code origin "refs/heads/$UPDATE_BRANCH")
+          test "$remote" = "$published"$'\t'"refs/heads/$UPDATE_BRANCH"
+          printf 'Published validated pins at %s:\n' "$published" >> "$GITHUB_STEP_SUMMARY"
+          printf -- '- %s\n' "${paths[@]}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Report provider failures after independent publication
+        if: ${{ !cancelled() && steps.prepare.outcome == 'success' && (steps.cachyos.outcome == 'failure' || steps.dw.outcome == 'failure') }}
+        env:
+          CACHYOS_OUTCOME: ${{ steps.cachyos.outcome }}
+          DW_OUTCOME: ${{ steps.dw.outcome }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add versions.json
-          git commit -m "proton-cachyos: update to latest version"
-          git push origin main
+          set -euo pipefail
+          printf 'Provider outcomes: CachyOS=%s; DW=%s. Failed providers retained their accepted pins. Any independently accepted updates were handled before this failure.\n' "$CACHYOS_OUTCOME" "$DW_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
+          echo '::error::At least one provider failed validation; inspect its step logs.'
+          exit 1
