@@ -2,7 +2,17 @@
 
 This repository is just Nix packaging for Proton-CachyOS (https://github.com/CachyOS/proton-cachyos) and DW-Proton (https://dawn.wine/dawn-winery/dwproton), which derive from Valve's Proton (https://github.com/ValveSoftware/Proton).
 
-The packaged software is distributed under Valve's license:
+## Packaging contributions
+
+Only original contributions to this repository whose copyright is held by Shochraos are dedicated to the public domain under the [Unlicense](UNLICENSE).
+
+Inherited packaging and contributions by other copyright holders are not covered by this dedication. Their original applicable terms and notices remain in effect; this repository does not grant new rights in that material. The packaging retains its origin as a fork of [kimjongbing/nix-proton-cachyos](https://github.com/kimjongbing/nix-proton-cachyos).
+
+## Packaged software
+
+The downloaded Proton-CachyOS and DW-Proton archives and all bundled components remain under their respective upstream licenses and notices, not the Unlicense.
+
+The following is Valve's Proton license notice. It is not a complete license inventory for either distribution:
 
 ```
 Copyright (c) 2018-2022, Valve Corporation
@@ -33,5 +43,3 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
-
-This repository is simply providing Nix packaging to make the software easier to use on NixOS.

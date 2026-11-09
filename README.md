@@ -56,4 +56,6 @@ Package CI builds all three named packages and inspects their installed files wi
 
 ## License
 
-[LICENSE](LICENSE) retains Valve's BSD-style Proton license and references both upstream distributions. Their bundled components retain their own licenses and notices. This repository contains packaging, not a new license grant for upstream software. The packaging retains its origin as a fork of [kimjongbing/nix-proton-cachyos](https://github.com/kimjongbing/nix-proton-cachyos).
+Only original contributions to this repository whose copyright is held by Shochraos are dedicated to the public domain under the [Unlicense](UNLICENSE). Inherited packaging, contributions by others, and downloaded Proton-CachyOS/DW-Proton software and bundled components are excluded; their original applicable terms and notices remain in effect.
+
+[LICENSE](LICENSE) explains the scope and retains Valve's Proton notice, which is not a complete license inventory for the distributions. The packaging retains its origin as a fork of [kimjongbing/nix-proton-cachyos](https://github.com/kimjongbing/nix-proton-cachyos).
