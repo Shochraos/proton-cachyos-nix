@@ -1,29 +1,41 @@
 name: Bug Report
 description: File a bug report
 body:
-  - type: markdown
+  - type: dropdown
+    id: package
     attributes:
-      value: |
-        Thanks for taking the time to fill out this bug report!
+      label: Package and variant
+      options:
+        - proton-cachyos (x86_64 baseline)
+        - proton-cachyos-v3 (x86_64_v3)
+        - dw-proton
+    validations:
+      required: true
+  - type: input
+    id: upstream-version
+    attributes:
+      label: Upstream version
+      description: Report the base and release from the provider's versions.json, and the flake revision if known.
+      placeholder: "major.minor-release"
+    validations:
+      required: true
   - type: input
     id: nixos-version
     attributes:
-      label: NixOS Version
-      description: What version of NixOS are you running?
-      placeholder: "24.11"
+      label: NixOS or host distribution version
+      description: What operating system version are you running?
     validations:
       required: true
   - type: textarea
     id: what-happened
     attributes:
       label: What happened?
-      description: Also tell us what you expected to happen
-      placeholder: "Describe the issue..."
+      description: Include reproduction steps and the expected behavior.
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
       label: Relevant log output
-      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      description: Remove credentials and personal information before posting.
       render: shell
